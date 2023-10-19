@@ -16,6 +16,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// makeWork takes a variadic parameter of base64 encoded images and returns a read-only channel of strings.
+// It creates a goroutine that sends each encoded image to the channel and then closes the channel.
 func makeWork(base64Images ...string) <-chan string {
 	out := make(chan string)
 
@@ -41,8 +43,10 @@ func pipeline[I any, O any](input <-chan I, process func(I) O) <-chan O {
 }
 
 func base64ToRawImage(base64Image string) image.Image {
+	// New image reader needs a standard encoding and a reader with the image as base.
 	reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(base64Image))
 
+	// Use the reader to decode the image.
 	img, _, err := image.Decode(reader)
 	if err != nil {
 		log.Fatal(err)
@@ -50,6 +54,7 @@ func base64ToRawImage(base64Image string) image.Image {
 	return img
 }
 
+// From an image buffer, encode it as webp and return a buffer.
 func encodeToWebp(img image.Image) bytes.Buffer {
 	var buf bytes.Buffer
 	if err := webp.Encode(&buf, img, &webp.Options{Lossless: true}); err != nil {
