@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/chai2010/webp"
 	"github.com/google/uuid"
@@ -72,6 +73,33 @@ func saveToDisk(imgBuf bytes.Buffer) string {
 	filename := fmt.Sprintf("%v.webp", uuid.New().String())
 	os.WriteFile(filename, imgBuf.Bytes(), 0644)
 	return filename
+}
+
+func fanIn[T any](channels ...<-chan T) <-chan T {
+	out := make(chan T)
+	var wg sync.WaitGroup
+	wg.Add(len(channels))
+
+	for _, ch := range channels {
+		// inside the loop, we create a goroutine for each channel we receive as input
+		go func(in <-chan T) {
+			defer wg.Done()
+			// inside the goroutine, we range over the input channel and send the values to the output channel
+			for c := range in {
+				out <- c
+			}
+		}(ch)
+	}
+
+	// we wait for all goroutines to finish
+	go func() {
+		wg.Wait()
+		// we close the output channel to indicate that no more values will be sent
+		close(out)
+	}()
+
+	// will be empty at first, but will be populated by the goroutines
+	return out
 }
 
 func main() {
