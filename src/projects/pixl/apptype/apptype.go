@@ -21,3 +21,8 @@ type State struct {
 	SwatchSelected int    // Index of selected swatch slice
 	FilePath       string // Path to file. New one will be empty
 }
+
+// Set the file path
+func (s *State) SetFilePath(path string) {
+	s.FilePath = path
+}
